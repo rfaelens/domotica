@@ -11,7 +11,7 @@ if len(sys.argv) != 3:
     raise Exception("Usage: "+sys.argv[0]+" DHT_PIN MQTTEndpoint")
 DHT_PIN=int(sys.argv[1])
 base = sys.argv[2]
-print( "Connecting DHT on pin "+DHT_PIN+" to "+base )
+print( "Connecting DHT on pin "+str(DHT_PIN)+" to "+base )
 
 DHT_TYPE = Adafruit_DHT.DHT22
 FREQUENCY_SECONDS      = 30
