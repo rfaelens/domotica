@@ -25,7 +25,7 @@ base = sys.argv[2]
 l.info( "Connecting DHT on pin "+str(DHT_PIN)+" to "+base )
 
 DHT_TYPE = Adafruit_DHT.DHT22
-FREQUENCY_SECONDS      = 10
+FREQUENCY_SECONDS      = 30
 
 mqttc=mqtt.Client()
 mqttc.connect("nas.lan")
