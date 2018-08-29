@@ -1,8 +1,12 @@
 #!/usr/bin/python3.5
 from eq3bt import Thermostat
+import eq3bt
 import paho.mqtt.client as mqtt
 import time
 import sys
+import logging
+
+eq3bt.connection.DEFAULT_TIMEOUT=100
 
 if len(sys.argv) != 3:
     raise Exception("Usage: "+sys.argv[0]+" MAC MQTTEndpoint")
@@ -16,6 +20,8 @@ mqttc=mqtt.Client()
 mqttc.connect("nas.lan")
 mqttc.loop_start()
 
+logging.basicConfig(level=logging.DEBUG)
+
 while True:
 	try:
 		thermostat.update()
@@ -23,6 +29,10 @@ while True:
 		print(e)
 		print("Error connecting to thermostat; trying again")
 		continue
+	if thermostat._raw_mode == None:
+		print("No reply received from thermostat... Strange!")
+		time.sleep(300)
+		continue #no message received within acceptable time...
 	print(thermostat)
 	mqttc.publish(base+"/target", thermostat.target_temperature) #target
 	mqttc.publish(base+"/mode", thermostat.mode_readable) #mode
