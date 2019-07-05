@@ -2,6 +2,11 @@
 
 # To install dependencies:
 #  sudo pip install Flask Flask-HTTPAuth
+# sudo pip install pushbullet.py
+
+# Configuration file 'passwd'
+# Form:
+# Ruben:PASSWORD:EMAIL
 
 from flask import Flask
 from flask_restful import Resource, Api
@@ -10,15 +15,24 @@ app = Flask(__name__)
 api = Api(app, prefix="/api/v1")
 auth = HTTPBasicAuth()
 
+from pushbullet import Pushbullet
+import json
+
+api_key = json.load(open("pb.json", "r"))
+print "Logging in with API_KEY: "+api_key
+pb = Pushbullet(api_key)
+
 file = open("passwd", "r")
 users = file.read().split("\n")
 USER_DATA = {}
+EMAILS = []
 for user in users:
     data = user.split(":")
-    if len(data) != 2:
+    if len(data) != 3:
         print "Ignoring line `"+user+"`"
         continue
     USER_DATA[data[0]] = data[1]
+    EMAILS.append(data[2])
 
 @auth.verify_password
 def verify(username, password):
@@ -28,10 +42,11 @@ def verify(username, password):
 
 class PrivateResource(Resource):
     @auth.login_required
-    def get(self):
-        return {"meaning_of_life": 42}
     def post(self):
         pushButton()
+        print "Sending notification via pushbullet"
+        for email in EMAILS:
+            pb.push_note("Garage", auth.username() + " duwde op de garageknop", email=email)
         return "Ik heb flink op de garageknop geduwd"
 
 api.add_resource(PrivateResource, '/private')
