@@ -1,0 +1,24 @@
+Download Raspbian stretch lite
+Flash image on SD card
+See https://medium.com/@danidudas/install-raspbian-jessie-lite-and-setup-wi-fi-without-access-to-command-line-or-using-the-network-97f065af722e
+Save a file ssh and a file wpa_supplicant.conf onto the BOOT partition
+
+Connect
+To change hostname:
+nano -w /etc/hosts
+nano -w /etc/hostname
+
+
+sudo apt-get install mosquitto
+systemctl enable mosquitto
+systemctl start mosquitto
+
+apt-get install python-pip
+sudo pip install paho-mqtt
+sudo apt-get install libglib2.0-dev
+sudo pip install python-eq3bt
+
+## AAAAAND, bluez-5.43 does not support BLE on my USB adapter... AAARGH!
+
+sudo apt-get install libdbus-1-dev libglib2.0-dev libudev-dev libical-dev libreadline-dev -y
+https://scribles.net/updating-bluez-on-raspberry-pi-5-43-to-5-48/
