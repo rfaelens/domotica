@@ -18,11 +18,11 @@ auth = HTTPBasicAuth()
 from pushbullet import Pushbullet
 import json
 
-api_key = json.load(open("pb.json", "r"))
+api_key = json.load(open("/opt/domotica/pb.json", "r"))
 print "Logging in with API_KEY: "+api_key
 pb = Pushbullet(api_key)
 
-file = open("passwd", "r")
+file = open("/opt/domotica/passwd", "r")
 users = file.read().split("\n")
 USER_DATA = {}
 EMAILS = []
