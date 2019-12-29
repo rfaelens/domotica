@@ -18,10 +18,14 @@ logger = logging.getLogger(__name__)
 eq3bt.connection.DEFAULT_TIMEOUT=100
 logging.basicConfig(level=logging.DEBUG)
 
-if len(sys.argv) != 3:
-    raise Exception("Usage: "+sys.argv[0]+" MAC DeviceID")
+if len(sys.argv) < 3:
+    raise Exception("Usage: "+sys.argv[0]+" MAC DeviceID [DeviceName]")
 btmac=sys.argv[1]
 device_id = sys.argv[2]
+if len(sys.argv) == 3:
+    device_name = device_id
+else:
+    device_name = sys.argv[3]
 logger.debug( "Connecting eq3bt "+btmac+" to "+device_id )
 
 thermostat = Thermostat(btmac)
@@ -87,7 +91,7 @@ class Device_EQ3BT(Device_Base):
         self.get_node('eq3bt').update_state(thermostat)
 
 
-homie = Device_EQ3BT(device_id='bla', name='Test EQ3BT', mqtt_settings=mqtt_settings)
+homie = Device_EQ3BT(device_id=device_id, name=device_name, mqtt_settings=mqtt_settings)
 l.info("Waiting 10s before main loop...")
 time.sleep(10) #sleep 10 seconds to avoid deadlock
 # see https://github.com/eclipse/paho.mqtt.python/issues/354
