@@ -88,6 +88,9 @@ class Device_EQ3BT(Device_Base):
 
 
 homie = Device_EQ3BT(device_id='bla', name='Test EQ3BT', mqtt_settings=mqtt_settings)
+l.info("Waiting 10s before main loop...")
+time.sleep(10) #sleep 10 seconds to avoid deadlock
+# see https://github.com/eclipse/paho.mqtt.python/issues/354
 
 while True:
         try:

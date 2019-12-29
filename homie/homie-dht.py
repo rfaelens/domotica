@@ -40,6 +40,9 @@ HP_CUT = 4 #if more then 4 deg difference from the mean, ignore signal
 stack = []
 
 temp_hum = Device_Temperature_Humidity(device_id=HomieName, name=HomieName, homie_settings={}, mqtt_settings=mqtt_settings, temp_units="C")
+l.info("Waiting 10s before main loop...")
+time.sleep(10) #sleep 10 seconds to avoid deadlock
+# see https://github.com/eclipse/paho.mqtt.python/issues/354
 
 while True:
     l.debug("Reading DHT sensor...")
