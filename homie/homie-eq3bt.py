@@ -8,14 +8,17 @@ from homie.node.property.property_boolean import Property_Boolean
 from homie.node.property.property_enum import Property_Enum
 from homie.node.property.property_string import Property_String
 from homie.node.node_base import Node_Base
+import homie
 import logging
 from eq3bt import Thermostat
 import eq3bt
 import sys
 import time
+from homie.mqtt.paho_mqtt_client import PAHO_MQTT_Client
+from paho.mqtt.client import Client
 
 logger = logging.getLogger(__name__)
-eq3bt.connection.DEFAULT_TIMEOUT=100
+eq3bt.connection.DEFAULT_TIMEOUT=500
 logging.basicConfig(level=logging.DEBUG)
 
 if len(sys.argv) < 3:
@@ -29,10 +32,9 @@ else:
 logger.debug( "Connecting eq3bt "+btmac+" to "+device_id )
 
 thermostat = Thermostat(btmac)
-mqtt_settings = {
-    'MQTT_BROKER' : 'nas',
-    'MQTT_PORT' : 1883,
-}
+
+import homieconnect
+mqtt_settings = homieconnect.mqtt_settings
 
 class Node_EQ3BT(Node_Base):
     def __init__(self, device, id='contact', name='EQ3BT', type_='eq3bt', retain=True, qos=1): 
@@ -92,9 +94,6 @@ class Device_EQ3BT(Device_Base):
 
 
 homie = Device_EQ3BT(device_id=device_id, name=device_name, mqtt_settings=mqtt_settings)
-l.info("Waiting 10s before main loop...")
-time.sleep(10) #sleep 10 seconds to avoid deadlock
-# see https://github.com/eclipse/paho.mqtt.python/issues/354
 
 while True:
         try:
