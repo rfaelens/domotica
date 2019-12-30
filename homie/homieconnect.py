@@ -19,26 +19,26 @@ from paho.mqtt.client import Client
 
 # Long arduous bugfix...
 # see https://github.com/eclipse/paho.mqtt.python/issues/354
-mqtt_settings = {
+settings = {
     'MQTT_BROKER' : 'nas',
     'MQTT_PORT' : 1883,
     'MQTT_SHARE_CLIENT': True
 }
+mqtt_settings =  homie.mqtt.homie_mqtt_client._mqtt_validate_settings(settings)
 class MQTTClientWrapper(Client):
-    def __init__(self, name):
-        Client.__init__(self, name)
     def publish(self, topic, payload=None, qos=0, retain=False):
-        with self._callback_mutex:
+       with self._callback_mutex:
             Client.publish(self, topic, payload, qos, retain)
 class BugfixClient(PAHO_MQTT_Client):
     def connect(self):
-        MQTT_Base.connect(self)
-        self.mqtt_client = MQTTClientWrapper(client_id=self.mqtt_settings['MQTT_CLIENT_ID'])
+        homie.mqtt.mqtt_base.MQTT_Base.connect(self)
+        #self.mqtt_client = MQTTClientWrapper(client_id=self.mqtt_settings['MQTT_CLIENT_ID'])
+        self.mqtt_client = Client(client_id=self.mqtt_settings['MQTT_CLIENT_ID'])
         self.mqtt_client.on_connect = self._on_connect
         self.mqtt_client.on_message = self._on_message
         #self.mqtt_client.on_publish = self._on_publish
         self.mqtt_client.on_disconnect = self._on_disconnect
-        self.mqtt_client.enable_logger(mqtt_logger)
+        self.mqtt_client.enable_logger(homie.mqtt.paho_mqtt_client.mqtt_logger)
         self.mqtt_client.enable_logger()
         if self.mqtt_settings ['MQTT_USERNAME']:
             self.mqtt_client.username_pw_set(
@@ -53,6 +53,7 @@ class BugfixClient(PAHO_MQTT_Client):
             )
             self.mqtt_client.loop_start()
         except Exception as e:
-            logger.warning ('MQTT Unable to connect to Broker {}'.format(e))
+            homie.mqtt.paho_mqtt_client.logger.warning ('MQTT Unable to connect to Broker {}'.format(e))
 clientWithBugfix = BugfixClient(mqtt_settings=mqtt_settings)
+clientWithBugfix.connect()
 homie.mqtt.homie_mqtt_client.common_mqtt_client = clientWithBugfix
