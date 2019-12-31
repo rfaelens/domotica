@@ -12,11 +12,15 @@ import time
 import homieconnect
 mqtt_settings = homieconnect.mqtt_settings
 
-
-if len(sys.argv) != 3:
-    raise Exception("Usage: "+sys.argv[0]+" DHT_PIN device_id")
+if len(sys.argv) < 3:
+    raise Exception("Usage: "+sys.argv[0]+" DHT_PIN DeviceID [DeviceName]")
 DHT_PIN=int(sys.argv[1])
 device_id = sys.argv[2]
+if len(sys.argv) == 3:
+    device_name = device_id
+else:
+    device_name = sys.argv[3]
+
 logging.basicConfig(filename=device_id+'.log',level=logging.DEBUG)
 l = logging.getLogger(__name__)
 l.info( "Connecting DHT on pin "+str(DHT_PIN)+" to "+device_id )
@@ -30,7 +34,7 @@ HP_LEN = 4
 HP_CUT = 4 #if more then 4 deg difference from the mean, ignore signal
 stack = []
 
-temp_hum = Device_Temperature_Humidity(device_id=device_id, name=device_id, homie_settings={}, mqtt_settings=mqtt_settings, temp_units="C")
+temp_hum = Device_Temperature_Humidity(device_id=device_id, name=device_name, homie_settings={}, mqtt_settings=mqtt_settings, temp_units="C")
 
 while True:
     l.debug("Reading DHT sensor...")
