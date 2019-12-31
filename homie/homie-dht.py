@@ -13,20 +13,13 @@ import homieconnect
 mqtt_settings = homieconnect.mqtt_settings
 
 
-l = logging.getLogger()
-l.setLevel(logging.DEBUG)
-
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-l.addHandler(ch)
-
 if len(sys.argv) != 3:
-    raise Exception("Usage: "+sys.argv[0]+" DHT_PIN HomieName")
+    raise Exception("Usage: "+sys.argv[0]+" DHT_PIN device_id")
 DHT_PIN=int(sys.argv[1])
-HomieName = sys.argv[2]
-l.info( "Connecting DHT on pin "+str(DHT_PIN)+" to "+HomieName )
+device_id = sys.argv[2]
+logging.basicConfig(filename=device_id+'.log',level=logging.DEBUG)
+l = logging.getLogger(__name__)
+l.info( "Connecting DHT on pin "+str(DHT_PIN)+" to "+device_id )
 
 DHT_TYPE = Adafruit_DHT.DHT22
 FREQUENCY_SECONDS      = 10
@@ -37,7 +30,7 @@ HP_LEN = 4
 HP_CUT = 4 #if more then 4 deg difference from the mean, ignore signal
 stack = []
 
-temp_hum = Device_Temperature_Humidity(device_id=HomieName, name=HomieName, homie_settings={}, mqtt_settings=mqtt_settings, temp_units="C")
+temp_hum = Device_Temperature_Humidity(device_id=device_id, name=device_id, homie_settings={}, mqtt_settings=mqtt_settings, temp_units="C")
 
 while True:
     l.debug("Reading DHT sensor...")
