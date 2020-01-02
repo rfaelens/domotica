@@ -17,9 +17,7 @@ import time
 from homie.mqtt.paho_mqtt_client import PAHO_MQTT_Client
 from paho.mqtt.client import Client
 
-logger = logging.getLogger(__name__)
 eq3bt.connection.DEFAULT_TIMEOUT=500
-logging.basicConfig(level=logging.DEBUG)
 
 if len(sys.argv) < 3:
     raise Exception("Usage: "+sys.argv[0]+" MAC DeviceID [DeviceName]")
@@ -29,7 +27,10 @@ if len(sys.argv) == 3:
     device_name = device_id
 else:
     device_name = sys.argv[3]
-logger.debug( "Connecting eq3bt "+btmac+" to "+device_id )
+
+logging.basicConfig(filename=device_id+'.log',level=logging.DEBUG)
+l = logging.getLogger(__name__)
+l.debug( "Connecting eq3bt "+btmac+" to "+device_id )
 
 thermostat = Thermostat(btmac)
 
@@ -99,12 +100,13 @@ while True:
         try:
             thermostat.update()
         except Exception as e:
-            print(e)
-            print("Error connecting to thermostat; trying again")
+            l.warning(e)
+            l.warning("Error connecting to thermostat; trying again")
+            time.sleep(10)
             continue
         if thermostat._raw_mode == None:
-            print("No reply received from thermostat... Strange!")
-            time.sleep(300)
+            l.warning("No reply received from thermostat... Strange!")
+            time.sleep(10)
             continue #no message received within acceptable time...
         print(thermostat)
         homie.update(thermostat)
