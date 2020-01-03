@@ -1,0 +1,18 @@
+Bridge mqtt:broker:nas [ host="localhost", secure=false ]
+{
+	Thing topic babyfoon  "Babyfoon" @ "bureau" {
+	Channels:
+		Type switch : knop [stateTopic="bureau/switch", commandTopic="bureau/switch" ]
+	}
+	Thing topic boiler  "Boiler" {
+	Channels:
+		Type switch : knop [stateTopic="boiler/switch", commandTopic="boiler/switch/set" ]
+	}
+	Thing topic blepresence  "BLEPresence" {
+	Channels:
+		Type number : AstridBadkamer [stateTopic="bluetooth/badkamer/ac:37:43:89:59:e7" ]
+		Type number : AstridLiving [stateTopic="bluetooth/living/ac:37:43:89:59:e7" ]
+		Type number : RubenBadkamer [stateTopic="bluetooth/badkamer/18:01:f1:4d:2d:38" ]
+		Type number : RubenLiving [stateTopic="bluetooth/living/18:01:f1:4d:2d:38" ]
+	}
+}
