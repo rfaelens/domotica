@@ -10,8 +10,6 @@ from homie.node.property.property_string import Property_String
 from homie.node.node_base import Node_Base
 import homie
 import logging
-from eq3bt import Thermostat
-import eq3bt
 import sys
 import time
 from homie.mqtt.paho_mqtt_client import PAHO_MQTT_Client
