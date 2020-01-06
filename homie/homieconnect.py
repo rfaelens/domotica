@@ -26,7 +26,7 @@ settings = {
 }
 mqtt_settings =  homie.mqtt.homie_mqtt_client._mqtt_validate_settings(settings)
 class MQTTClientWrapper(Client):
-    def publish(self, topic, payload=None, qos=0, retain=False):
+    def publish(self, topic, payload=None, qos=1, retain=False):
        with self._callback_mutex:
             Client.publish(self, topic, payload, qos, retain)
 class BugfixClient(PAHO_MQTT_Client):
