@@ -29,6 +29,7 @@ else:
     device_name = sys.argv[3]
 
 logging.basicConfig(filename=device_id+'.log',level=logging.DEBUG)
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 l = logging.getLogger(__name__)
 l.debug( "Connecting eq3bt "+btmac+" to "+device_id )
 
@@ -38,14 +39,18 @@ import homieconnect
 mqtt_settings = homieconnect.mqtt_settings
 
 class Node_EQ3BT(Node_Base):
-    def __init__(self, device, id='contact', name='EQ3BT', type_='eq3bt', retain=True, qos=1): 
+    def __init__(self, device, id='eq3bt', name='EQ3BT', type_='eq3bt', retain=True, qos=1): 
         super().__init__(device,id,name,type_,retain,qos)
-        self.add_property(Property_Temperature(self,id='target-temperature',name='Target temperature',unit='C', set_value=self.set_target_temperature) )
+        self.add_property(Property_Temperature(self,id='target-temperature',name='Target temperature',unit='C', set_value=self.set_target_temperature, settable=True) )
         self.add_property(Property_Integer(self, id="valve-state", name="Valve state", settable=False, unit="%", data_format="0:100"))
         self.add_property(Property_Boolean(self, id="low-battery", name="Low battery", settable=False))
-        self.add_property(Property_Enum(self, id="mode", name="Mode", data_format='Closed,Open,Auto,Manual,Away,Boost', set_value=self.set_mode))
-        self.add_property(Property_Boolean(self, id="locked", name="Locked", set_value=self.set_locked))
-        self.add_property(Property_Boolean(self, id="boost", name="Boost", set_value=self.set_boost))
+        self.add_property(Property_Enum(self, id="mode", name="Mode", data_format="Boost,Away,Closed,Open,Manual,Auto", settable=True, set_value=self.set_mode))
+        self.add_property(Property_Boolean(self, id="mode-manual", name="Mode manual", settable=True, set_value=self.set_mode_manual))
+        self.add_property(Property_Boolean(self, id="mode-away", name="Mode away", settable=False))
+        self.add_property(Property_Boolean(self, id="mode-dst", name="Mode dst", settable=False))
+        self.add_property(Property_Boolean(self, id="mode-window", name="Mode window", settable=False))
+        self.add_property(Property_Boolean(self, id="locked", name="Locked", set_value=self.set_locked, settable=True))
+        self.add_property(Property_Boolean(self, id="boost", name="Boost", set_value=self.set_boost, settable=True))
         self.add_property(Property_Temperature(self,id='comfort-temperature',name='Comfort temperature',unit='C', settable=False) )
         self.add_property(Property_Temperature(self,id='eco-temperature',name='Eco temperature',unit='C', settable=False) )
         self.add_property(Property_Temperature(self,id='temperature-offset',name='Temperature offset',settable=True,unit='C', set_value=self.set_temperature_offset) )
@@ -54,16 +59,35 @@ class Node_EQ3BT(Node_Base):
         self.add_property(Property_String(self, id="firmware-version", name="Firmware version", settable=False))
         self.add_property(Property_String(self, id="device-serial", name="Device serial", settable=False))
         #no AWAY mode yet; too complex
-        # DST mode
-        # no Window Open config settings
+        # no window Open config settings
         # or reporting of Window Open mode
         #self.add_property(Property_Integer(self, id="away_end", name="Away end", settable=False))
-    
     def update_state(self,thermostat):
         self.get_property('target-temperature').value = thermostat.target_temperature
         self.get_property('valve-state').value = thermostat.valve_state
         self.get_property("low-battery").value = thermostat.low_battery
-        self.get_property("mode").value = thermostat.mode
+#    Unknown = -1
+#    Closed = 0
+#    Open = 1
+#    Auto = 2
+#    Manual = 3
+#    Away = 4
+#    Boost = 5
+        switcher= {
+                0: "Closed",
+                1: "Open",
+                2: "Auto",
+                3: "Manual",
+                4: "Away",
+                5: "Boost"
+        }
+        self.get_property("mode").value = switcher.get(thermostat.mode)
+        mode = thermostat._raw_mode
+        self.get_property("mode-manual").value = mode.MANUAL
+        self.get_property("mode-away").value = mode.AWAY
+        self.get_property("mode-dst").value = mode.DST
+        self.get_property("mode-window").value = mode.WINDOW
+
         self.get_property("locked").value = thermostat.locked
         self.get_property("boost").value = thermostat.boost
         self.get_property("comfort-temperature").value = thermostat.comfort_temperature
@@ -74,21 +98,28 @@ class Node_EQ3BT(Node_Base):
         self.get_property("firmware-version").value = thermostat.firmware_version
         self.get_property("device-serial").value = thermostat.device_serial
     def set_target_temperature(self,x):
+        l.debug("SETTING target_temp to "+str(x))
         thermostat.target_temperature=x
     def set_locked(self,x):
         thermostat.locked=x
     def set_boost(self,x):
+        l.debug("SETTING boost to "+str(x))
         thermostat.boost=x
     def set_temperature_offset(self,x):
         thermostat.temperature_offset=x
+    def set_mode_manual(self, x):
+        if(x):
+           thermostat.mode = 3 #MANUAL
+        else:
+           thermostat.mode = 0 #AUTO
     def set_mode(self, x):
         #not working yet
-        True
+        thermostat.mode = x
 
 class Device_EQ3BT(Device_Base):
     def __init__(self, device_id=None, name=None, homie_settings=None, mqtt_settings=None):
         super().__init__ (device_id, name, homie_settings, mqtt_settings)
-        self.add_node(Node_EQ3BT(self,id='eq3bt'))
+        self.add_node(Node_EQ3BT(self))
         self.start()
     def update(self,thermostat):
         self.get_node('eq3bt').update_state(thermostat)
