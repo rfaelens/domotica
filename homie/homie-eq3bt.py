@@ -14,6 +14,7 @@ from eq3bt import Thermostat
 import eq3bt
 import sys
 import time
+import datetime
 from homie.mqtt.paho_mqtt_client import PAHO_MQTT_Client
 from paho.mqtt.client import Client
 
@@ -68,11 +69,13 @@ class Node_EQ3BT(Node_Base):
         self.add_property(Property_Temperature(self,id='max-temp',name='Maximum temperature',unit='C', settable=False) )
         self.add_property(Property_String(self, id="firmware-version", name="Firmware version", settable=False))
         self.add_property(Property_String(self, id="device-serial", name="Device serial", settable=False))
+        self.add_property(Property_String(self, id="last-update", name="Last update", settable=False))
         #no AWAY mode yet; too complex
         # no window Open config settings
         # or reporting of Window Open mode
         #self.add_property(Property_Integer(self, id="away_end", name="Away end", settable=False))
     def update_state(self,thermostat):
+        self.get_property('last-update').value = datetime.datetime.now().isoformat()
         self.get_property('target-temperature').value = thermostat.target_temperature
         self.get_property('valve-state').value = thermostat.valve_state
         self.get_property("low-battery").value = thermostat.low_battery
