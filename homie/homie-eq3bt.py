@@ -1,10 +1,10 @@
 #!/usr/bin/env python
+import re
 from homie.device_base import Device_Base
 from homie.node.node_contact import Node_Contact
 from homie.node.property.property_contact import Property_Contact
 from homie.node.property.property_temperature import Property_Temperature
 from homie.node.property.property_integer import Property_Integer
-from homie.node.property.property_boolean import Property_Boolean
 from homie.node.property.property_enum import Property_Enum
 from homie.node.property.property_string import Property_String
 from homie.node.node_base import Node_Base
@@ -28,7 +28,7 @@ if len(sys.argv) == 3:
 else:
     device_name = sys.argv[3]
 
-logging.basicConfig(filename=device_id+'.log',level=logging.DEBUG)
+logging.basicConfig(filename=device_id+'.log',level=logging.DEBUG, format='%(asctime)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 l = logging.getLogger(__name__)
 l.debug( "Connecting eq3bt "+btmac+" to "+device_id )
@@ -38,6 +38,16 @@ thermostat = Thermostat(btmac)
 import homieconnect
 mqtt_settings = homieconnect.mqtt_settings
 
+import homie.node.property.property_boolean as property_boolean
+#from homie.node.property.property_boolean import Property_Boolean
+class Property_Boolean(property_boolean.Property_Boolean):
+    @property_boolean.Property_Boolean.value.setter
+    def value(self, value, retain=True, qos=1):
+         if value:
+            str_value="true"
+         else:
+            str_value="false"
+         property_boolean.Property_Boolean.value.fset(self, value=str_value, retain=retain, qos=qos)
 class Node_EQ3BT(Node_Base):
     def __init__(self, device, id='eq3bt', name='EQ3BT', type_='eq3bt', retain=True, qos=1): 
         super().__init__(device,id,name,type_,retain,qos)

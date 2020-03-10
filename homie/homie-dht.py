@@ -21,7 +21,9 @@ if len(sys.argv) == 3:
 else:
     device_name = sys.argv[3]
 
-logging.basicConfig(filename=device_id+'.log',level=logging.DEBUG)
+logging.basicConfig(filename=device_id+'.log',level=logging.DEBUG, format='%(asctime)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+#logging.basicConfig(format=FORMAT,level=logging.INFO,datefmt='%Y-%m-%d %H:%M:%S')
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 l = logging.getLogger(__name__)
 l.info( "Connecting DHT on pin "+str(DHT_PIN)+" to "+device_id )
 
