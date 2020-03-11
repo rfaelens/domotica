@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import re
+import aniso8601
 from homie.device_base import Device_Base
 from homie.node.node_contact import Node_Contact
 from homie.node.property.property_contact import Property_Contact
@@ -70,6 +71,7 @@ class Node_EQ3BT(Node_Base):
         self.add_property(Property_String(self, id="firmware-version", name="Firmware version", settable=False))
         self.add_property(Property_String(self, id="device-serial", name="Device serial", settable=False))
         self.add_property(Property_String(self, id="last-update", name="Last update", settable=False))
+        self.add_property(Property_String(self, id="away-end", name="Away end", settable=True, set_value=self.set_away_end))
         #no AWAY mode yet; too complex
         # no window Open config settings
         # or reporting of Window Open mode
@@ -96,6 +98,7 @@ class Node_EQ3BT(Node_Base):
         }
         self.get_property("mode").value = switcher.get(thermostat.mode)
         mode = thermostat._raw_mode
+        l.debug("Current mode: "+str(mode))
         self.get_property("mode-manual").value = mode.MANUAL
         self.get_property("mode-away").value = mode.AWAY
         self.get_property("mode-dst").value = mode.DST
@@ -110,24 +113,35 @@ class Node_EQ3BT(Node_Base):
         self.get_property("max-temp").value = thermostat.max_temp
         self.get_property("firmware-version").value = thermostat.firmware_version
         self.get_property("device-serial").value = thermostat.device_serial
+        self.get_property("away-end").value = thermostat.away_end.isoformat()
     def set_target_temperature(self,x):
         l.debug("SETTING target_temp to "+str(x))
         thermostat.target_temperature=x
+        self.update_state(thermostat)
+    def set_away_end(self,x):
+        end = aniso8601.parse_datetime(x)
+        thermostat.set_away(away_end=end)
+        self.update_state(thermostat)
     def set_locked(self,x):
         thermostat.locked=x
+        self.update_state(thermostat)
     def set_boost(self,x):
         l.debug("SETTING boost to "+str(x))
         thermostat.boost=x
+        self.update_state(thermostat)
     def set_temperature_offset(self,x):
         thermostat.temperature_offset=x
+        self.update_state(thermostat)
     def set_mode_manual(self, x):
         if(x):
            thermostat.mode = 3 #MANUAL
         else:
            thermostat.mode = 0 #AUTO
+        self.update_state(thermostat)
     def set_mode(self, x):
         #not working yet
         thermostat.mode = x
+        self.update_state(thermostat)
 
 class Device_EQ3BT(Device_Base):
     def __init__(self, device_id=None, name=None, homie_settings=None, mqtt_settings=None):
