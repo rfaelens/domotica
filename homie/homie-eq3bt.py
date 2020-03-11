@@ -77,6 +77,7 @@ class Node_EQ3BT(Node_Base):
         # or reporting of Window Open mode
         #self.add_property(Property_Integer(self, id="away_end", name="Away end", settable=False))
     def set_last_update(self, x):
+        l.debug("Received request for update")
         thermostat.update()
         self.update_state(thermostat)
     def update_state(self,thermostat):
@@ -116,7 +117,12 @@ class Node_EQ3BT(Node_Base):
         self.get_property("max-temp").value = thermostat.max_temp
         self.get_property("firmware-version").value = thermostat.firmware_version
         self.get_property("device-serial").value = thermostat.device_serial
-        self.get_property("away-end").value = thermostat.away_end.isoformat()
+        awayEnd = thermostat.away_end
+        if not awayEnd:
+            awayEnd = ""
+        else:
+            awayEnd = awayEnd.isoformat()
+        self.get_property("away-end").value = awayEnd
     def set_target_temperature(self,x):
         l.debug("SETTING target_temp to "+str(x))
         thermostat.target_temperature=x
@@ -128,6 +134,7 @@ class Node_EQ3BT(Node_Base):
             thermostat.set_away() #this disables AWAY
         self.update_state(thermostat)
     def set_away_end(self,x):
+        l.debug("SETTING away_end to "+str(x))
         end = aniso8601.parse_datetime(x)
         thermostat.set_away(away_end=end)
         self.update_state(thermostat)
