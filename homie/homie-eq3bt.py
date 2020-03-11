@@ -58,7 +58,7 @@ class Node_EQ3BT(Node_Base):
         self.add_property(Property_Boolean(self, id="low-battery", name="Low battery", settable=False))
         self.add_property(Property_Enum(self, id="mode", name="Mode", data_format="Boost,Away,Closed,Open,Manual,Auto", settable=True, set_value=self.set_mode))
         self.add_property(Property_Boolean(self, id="mode-manual", name="Mode manual", settable=True, set_value=self.set_mode_manual))
-        self.add_property(Property_Boolean(self, id="mode-away", name="Mode away", settable=False))
+        self.add_property(Property_Boolean(self, id="mode-away", name="Mode away", settable=True, set_value=self.set_away))
         self.add_property(Property_Boolean(self, id="mode-dst", name="Mode dst", settable=False))
         self.add_property(Property_Boolean(self, id="mode-window", name="Mode window", settable=False))
         self.add_property(Property_Boolean(self, id="locked", name="Locked", set_value=self.set_locked, settable=True))
@@ -70,12 +70,15 @@ class Node_EQ3BT(Node_Base):
         self.add_property(Property_Temperature(self,id='max-temp',name='Maximum temperature',unit='C', settable=False) )
         self.add_property(Property_String(self, id="firmware-version", name="Firmware version", settable=False))
         self.add_property(Property_String(self, id="device-serial", name="Device serial", settable=False))
-        self.add_property(Property_String(self, id="last-update", name="Last update", settable=False))
+        self.add_property(Property_String(self, id="last-update", name="Last update", settable=True, set_value=self.set_last_update))
         self.add_property(Property_String(self, id="away-end", name="Away end", settable=True, set_value=self.set_away_end))
         #no AWAY mode yet; too complex
         # no window Open config settings
         # or reporting of Window Open mode
         #self.add_property(Property_Integer(self, id="away_end", name="Away end", settable=False))
+    def set_last_update(self, x):
+        thermostat.update()
+        self.update_state(thermostat)
     def update_state(self,thermostat):
         self.get_property('last-update').value = datetime.datetime.now().isoformat()
         self.get_property('target-temperature').value = thermostat.target_temperature
@@ -117,6 +120,12 @@ class Node_EQ3BT(Node_Base):
     def set_target_temperature(self,x):
         l.debug("SETTING target_temp to "+str(x))
         thermostat.target_temperature=x
+        self.update_state(thermostat)
+    def set_away(self, x):
+        if(x):
+            True
+        else:
+            thermostat.set_away() #this disables AWAY
         self.update_state(thermostat)
     def set_away_end(self,x):
         end = aniso8601.parse_datetime(x)
