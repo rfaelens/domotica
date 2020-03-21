@@ -92,6 +92,7 @@ class Monitor(threading.Thread):
         filtr = self.bluez.hci_filter_new()
         self.bluez.hci_filter_all_events(filtr)
         self.bluez.hci_filter_set_ptype(filtr, self.bluez.HCI_EVENT_PKT)
+        self.bluez.hci_filter_set_event(filtr, self.bluez.EVT_CMD_COMPLETE) #Added
         self.socket.setsockopt(self.bluez.SOL_HCI, self.bluez.HCI_FILTER, filtr)
 
         self.set_scan_parameters()
@@ -99,14 +100,20 @@ class Monitor(threading.Thread):
 
         while self.keep_going:
             pkt = self.socket.recv(255)
+            
             event = to_int(pkt[1])
             subevent = to_int(pkt[3])
             if event == LE_META_EVENT and subevent == EVT_LE_ADVERTISING_REPORT:
                 # we have an BLE advertisement
                 self.process_packet(pkt)
+            elif event == 14 and to_int(pkt[4])== 12: #Command Complete 0x0e, LE Set Scan Parameters (0x0c)
+                _LOGGER.debug("Received set scan parameters packet; resetting scan!")
+                _LOGGER.debug(pkt)
+                self.set_scan_parameters()
+                self.toggle_scan(True)
         self.socket.close()
 
-    def set_scan_parameters(self, scan_type=ScanType.ACTIVE, interval_ms=10, window_ms=10,
+    def set_scan_parameters(self, scan_type=ScanType.PASSIVE, interval_ms=10, window_ms=10,
                             address_type=BluetoothAddressType.RANDOM, filter_type=ScanFilter.ALL):
         """"sets the le scan parameters
 
@@ -148,6 +155,7 @@ class Monitor(threading.Thread):
             filter_type)
         self.bluez.hci_send_cmd(self.socket, OGF_LE_CTL, OCF_LE_SET_SCAN_PARAMETERS,
                                 scan_parameter_pkg)
+        pkt = self.socket.recv(255) ## throw away status?
 #        pkt = self.socket.recv(
 
     def toggle_scan(self, enable, filter_duplicates=False):
@@ -159,7 +167,7 @@ class Monitor(threading.Thread):
                 omits duplicated packets"""
         command = struct.pack(">BB", enable, filter_duplicates)
         result=self.bluez.hci_send_cmd(self.socket, OGF_LE_CTL, OCF_LE_SET_SCAN_ENABLE, command)
-        print("LCF_LE_SET_SCAN_ENABLE returned "+str(result))
+        pkt = self.socket.recv(255) ## throw away status?
 
     def process_packet(self, pkt):
         """Parse the packet and call callback if one of the filters matches."""
