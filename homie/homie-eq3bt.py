@@ -119,7 +119,7 @@ class Node_EQ3BT(Node_Base):
         self.get_property("device-serial").value = thermostat.device_serial
         awayEnd = thermostat.away_end
         if not awayEnd:
-            awayEnd = ""
+            awayEnd = "1970-01-01T00:00:00" #empty string gives issues in openHab
         else:
             awayEnd = awayEnd.isoformat()
         self.get_property("away-end").value = awayEnd
