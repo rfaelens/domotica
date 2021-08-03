@@ -84,7 +84,7 @@ def sendMqttOpenDoor():
 	if zwaveApiReply == None:
 		return "No reply from Zwave server! Failed..."
         if zwaveEventReply == None:
-            return "No reply from Zwave lock! Zwave server replied:\n Success:"+zwaveEventReply[u'success']+", "+zwaveEventReply[u'message']
+            return "No reply from Zwave lock! Zwave server replied:\n Success:"+str(zwaveApiReply[u'success'])+", "+str(zwaveApiReply[u'message'])
 	lockState = zwaveEventReply['data'][1]
 	prop = lockState[u'propertyName']
 	prevValue = lockState[u'prevValue']
@@ -101,27 +101,27 @@ class DoorResource(Resource):
         return result
 api.add_resource(DoorResource, '/door')
 
-class GarageResource(Resource):
-    @auth.login_required
-    def post(self):
-        pushButton()
-        print "Sending notification via pushbullet"
-        for email in EMAILS:
-            pb.push_note("Garage", auth.username() + " duwde op de garageknop", email=email)
-        return "Ik heb flink op de garageknop geduwd"
+#class GarageResource(Resource):
+#    @auth.login_required
+#    def post(self):
+#        pushButton()
+#        print "Sending notification via pushbullet"
+#        for email in EMAILS:
+#            pb.push_note("Garage", auth.username() + " duwde op de garageknop", email=email)
+#        return "Ik heb flink op de garageknop geduwd"
+#
+#api.add_resource(GarageResource, '/private')
 
-api.add_resource(GarageResource, '/private')
-
-import RPi.GPIO as GPIO
-import time
-RELAY_PIN = 11 #pick a pin that is LOW by default
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(RELAY_PIN, GPIO.OUT, initial=GPIO.LOW)
-
-def pushButton():
-    GPIO.output(RELAY_PIN, True)
-    time.sleep(1)
-    GPIO.output(RELAY_PIN, False)
+#import RPi.GPIO as GPIO
+#import time
+#RELAY_PIN = 11 #pick a pin that is LOW by default
+#GPIO.setmode(GPIO.BOARD)
+#GPIO.setup(RELAY_PIN, GPIO.OUT, initial=GPIO.LOW)
+#
+#def pushButton():
+#    GPIO.output(RELAY_PIN, True)
+#    time.sleep(1)
+#    GPIO.output(RELAY_PIN, False)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=False)
