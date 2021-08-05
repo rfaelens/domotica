@@ -40,6 +40,11 @@ thermostat = Thermostat(btmac)
 import homieconnect
 mqtt_settings = homieconnect.mqtt_settings
 
+def to_homie_float(value):
+        if not value:
+                return(0)
+        return(value)
+
 import homie.node.property.property_boolean as property_boolean
 #from homie.node.property.property_boolean import Property_Boolean
 class Property_Boolean(property_boolean.Property_Boolean):
@@ -110,16 +115,16 @@ class Node_EQ3BT(Node_Base):
 
         self.get_property("locked").value = thermostat.locked
         self.get_property("boost").value = thermostat.boost
-        self.get_property("comfort-temperature").value = thermostat.comfort_temperature
-        self.get_property("eco-temperature").value = thermostat.eco_temperature
-        self.get_property("temperature-offset").value = thermostat.temperature_offset
-        self.get_property("min-temp").value = thermostat.min_temp
-        self.get_property("max-temp").value = thermostat.max_temp
+        self.get_property("comfort-temperature").value = to_homie_float(thermostat.comfort_temperature)
+        self.get_property("eco-temperature").value = to_homie_float(thermostat.eco_temperature)
+        self.get_property("temperature-offset").value = to_homie_float(thermostat.temperature_offset)
+        self.get_property("min-temp").value = to_homie_float(thermostat.min_temp)
+        self.get_property("max-temp").value = to_homie_float(thermostat.max_temp)
         self.get_property("firmware-version").value = thermostat.firmware_version
         self.get_property("device-serial").value = thermostat.device_serial
         awayEnd = thermostat.away_end
         if not awayEnd:
-            awayEnd = ""
+            awayEnd = "1970-01-01T00:00:00" #empty string gives issues in openHab
         else:
             awayEnd = awayEnd.isoformat()
         self.get_property("away-end").value = awayEnd
