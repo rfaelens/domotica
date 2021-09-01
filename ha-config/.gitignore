@@ -1,0 +1,3 @@
+home-assistant*
+.storage
+secrets.yaml

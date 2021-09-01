@@ -1,0 +1,11 @@
+version: '3'
+services:
+  homeassistant:
+    container_name: homeassistant
+    image: homeassistant/home-assistant:stable
+    volumes:
+      - /opt/domotica/ha-config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/nas/etc/letsencrypt/:/ssl:ro
+    restart: unless-stopped
+    network_mode: host
