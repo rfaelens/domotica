@@ -16,6 +16,7 @@ import pickle
 
 pickleFile = '/opt/domotica/nibe/nibegw.pickle'
 registersFile = '/opt/domotica/nibe/registers.csv'
+homeAssistantFile = '/opt/domotica/nibe/homeassistant.yaml'
 
 readRequest = collections.deque()
 writeRequest = collections.deque()
@@ -104,17 +105,18 @@ def handleWriteConfirmation(data):
 #        print("0x6c WRITE CONFIRMED:  0x", data.hex())
         sendAck(ser)
 def handleRead(data):
-        #print("READ: 0x", data.hex())
+        print("READ: 0x", data.hex())
         register = data[1]*256 + data[0]
         if not register in definition:
           print("Unknown register 0x", data[0:2].hex(), " (", register, ") skipping...")
           return
         registerDefinition = definition[register]
+        row = registerDefinition
         dataType = registerDefinition[4]
         length = { "u8":1, "s8":1, "u16":2, "s16":2, "u32":4, "s32":4 }
         signed = { "u8":False, "s8":True, "u16":False, "s16":True, "u32":False, "s32":True }
         ## TODO: handle 32-bit numbers
-        if length[dataType] == 4: raise "Error: no support for 32bit numbers yet"
+        if length[dataType] == 4: print("WARNING for register "+str(register)+": no support for 32bit numbers yet")
         value = data[2:2+length[dataType] ]
         value = int.from_bytes(value, "little", signed=signed[dataType] )
         factor = int( registerDefinition[5] )
@@ -122,6 +124,8 @@ def handleRead(data):
         strvalue = str(value) + registerDefinition[3] #unit
 #        print("0x6a READ: ", register, "(",dataType,") = ", strvalue)
         mqttc.publish("nibe/"+str(register)+"/value", str(value))
+        config = '{"register":'+str(register)+',"title":"'+row[0]+'","info":"'+row[1]+'","Unit":"'+row[3]+'","Min":"'+row[6]+'","Max":"'+row[7]+'","Default":"'+row[8]+'","Mode":"'+row[9]+'","Value":'+str(value)+'}'
+        mqttc.publish("nibe/"+str(register)+"/config", config)
         sendAck(ser)
 
         global startup
@@ -210,7 +214,7 @@ def checkMessage(msg):
 
 import csv
 definition = dict()
-with open('registers.csv', encoding='iso-8859-1') as csvfile:
+with open(registersFile, encoding='iso-8859-1') as csvfile:
     reader = csv.reader(csvfile, delimiter=";")
     for row in reader:
       if len(row) < 5: continue
@@ -223,11 +227,17 @@ topicre = regex.compile('^nibe/(\\d+)/([^/]*)$')
 def on_message(client, userdata, message):
 #    print("Received message '" + str(message.payload) + "' on topic '"
 #                    + message.topic + "' with QoS " + str(message.qos))
-    m = topicre.match(message.topic)
-    register=int(m.group(1))
-    action=m.group(2)
+    try:
+      m = topicre.match(message.topic)
+      register=int(m.group(1))
+      action=m.group(2)
+    except:
+        print("Failed to parse MQTT Topic "+message.topic)
+        return()
 #    print(action+" on register <"+str(register)+">")
     if action == "value":
+        True #this is my own message
+    elif action == "config":
         True #this is my own message
     elif action == "read":
       readRequest.append( getReadRequest(register) )
@@ -239,19 +249,26 @@ def on_message(client, userdata, message):
           print("Invalid write value for register "+register+": <"+message.payload+">")
     elif action == "unpoll":
       with lock:
-        poll.remove(register)
+        if register in poll:
+          poll.remove(register)
         pickle.dump(poll, file = open(pickleFile, "wb"))
     elif action == "poll":
       with lock:
-        poll.append(register)
+        if not register in poll:
+          poll.append(register)
         pickle.dump(poll, file = open(pickleFile, "wb"))
     else:
       print("Unknown action: "+action)
 
+import yaml
+
 def on_connect(client, userdata, flags, rc):
     print("CONNECTED TO MQTT")
     mqttc.subscribe("nibe/+/+")
-    True
+    # Open the file and load the file
+#    with open(homeAssistantFile) as f:
+#        data = yaml.load_all(f, Loader=SafeLoader)
+#        print(data)
 #    print('Advertising presence for '+str(devices))
 #    for device in devices:
 #        device = str(device)
