@@ -12,9 +12,7 @@ from serial import Serial
 from crccheck.checksum import ChecksumXor8
 import collections
 import threading
-import pickle
 
-pickleFile = '/opt/domotica/nibe/nibegw.pickle'
 registersFile = '/opt/domotica/nibe/registers.csv'
 homeAssistantFile = '/opt/domotica/nibe/homeassistant.yaml'
 
@@ -22,11 +20,9 @@ readRequest = collections.deque()
 writeRequest = collections.deque()
 lock = threading.Lock()
 startup = True
+hpIdentifier = None
 
-try:
-  poll = pickle.load(open(pickleFile, "rb"))
-except:
-  poll = collections.deque()
+poll = collections.deque()
 
 def parseBuffer(msg):
             if len(msg) == 1 and msg[0] == 0x06:
@@ -39,15 +35,16 @@ def parseBuffer(msg):
             #mysteryByte = msg[6+datalen]
             calcCrc = ChecksumXor8()
             calcCrc.process(msg[1:datalen+6-1])
-            if calcCrc.final() != crc: print("CRC failed")
+            if calcCrc.final() != crc: print("CRC failed for 0x"+msg.hex())
             handleFrame(cmd, data)
 def handleFrame(cmd, data):
+        data = data.replace(b'\\\\', b'\\') # b'\\' is 0x5c, which is 'escaped' in the message
         #commands: 0x68, 0x69, 0x6a, 0x6b, 0x6d, 0xee
         # 0x68 report multiple
         # 0x69 no data   READ token  :heat pump says: if you want, you can read something now. If not, just send ACK.
         # 0x6B           WRITE token :heat pump says: if you want, you can write something. If not, just send ACK.
         # 0x6a read single
-        # 0x6d some data ???
+        # 0x6d broadcasts heatpump identifier
         # 0xee nothing
         if cmd == 0x68:
           handleData(data)
@@ -71,7 +68,9 @@ def handleFrame(cmd, data):
 
 def handleAdvertisement(data):
      print("0x6d ADVERTISEMENT: ", data, "  0x", data.hex())
-
+     global hpIdentifier
+     hpIdentifier = data[4:].decode()
+     sendAck(ser)
 
 def sendAck(ser):
 #    print("ACK")
@@ -84,6 +83,8 @@ def handleWriteToken(data):
             req = writeRequest.popleft()
             print("\tsending "+req.hex())
             ser.write(req)
+            register = req[4]*256 + req[3]
+            readRequest.appendleft(getReadRequest(register))
         else:
             sendAck(ser)
 def handleReadToken(data):
@@ -106,6 +107,9 @@ def handleWriteConfirmation(data):
         sendAck(ser)
 def handleRead(data):
         print("READ: 0x", data.hex())
+        ## if data contains 0x5c, it is repeated ("escaped")
+        if len(data) != 6:
+            print("Malformed READ packet; size "+str(len(data)))
         register = data[1]*256 + data[0]
         if not register in definition:
           print("Unknown register 0x", data[0:2].hex(), " (", register, ") skipping...")
@@ -119,6 +123,12 @@ def handleRead(data):
         if length[dataType] == 4: print("WARNING for register "+str(register)+": no support for 32bit numbers yet")
         value = data[2:2+length[dataType] ]
         value = int.from_bytes(value, "little", signed=signed[dataType] )
+        minRaw = int(registerDefinition[6])
+        maxRaw = int(registerDefinition[7])
+        useLimits = not ( (minRaw == maxRaw) and (maxRaw == 0) )
+        if useLimits and (value < minRaw or value > maxRaw):
+            print("Received faulty value for register "+str(register)+": "+str(value)+", not relaying to MQTT!")
+            return()
         factor = int( registerDefinition[5] )
         value = value / factor
         strvalue = str(value) + registerDefinition[3] #unit
@@ -142,6 +152,8 @@ def handleData(data):
           data = data[4:len(data)]
           register = msg[1]*256 + msg[0]
           if register == 0xffff:
+            continue # empty spot
+          elif register == 0x0000:
             continue # empty spot
           elif not register in definition:
             print("Unknown register 0x", data[0:2].hex(), "skipping...")
@@ -251,16 +263,74 @@ def on_message(client, userdata, message):
       with lock:
         if register in poll:
           poll.remove(register)
-        pickle.dump(poll, file = open(pickleFile, "wb"))
     elif action == "poll":
       with lock:
         if not register in poll:
           poll.append(register)
-        pickle.dump(poll, file = open(pickleFile, "wb"))
+          advertiseHomeassistant(register)
     else:
       print("Unknown action: "+action)
 
-import yaml
+import json
+import time
+
+def advertiseHomeassistant(register):
+    registerDefinition = definition[register]
+    register = str(register)
+    advertisement = dict()
+    advertisement['state_topic'] = 'nibe/'+register+'/value'
+    advertisement['json_attributes_topic'] = 'nibe/'+register+'/config'
+    mode = registerDefinition[9]
+    unit = registerDefinition[3]
+    if mode == "R":
+        advType = "sensor"
+        advertisement['expire_after'] = 1 * 60 * 60 #1 hour
+        advertisement['unit_of_measurement'] = unit
+        if unit == "°C":
+            advertisement['device_class'] = 'temperature'
+        elif unit == "%":
+            advertisement['device_class'] = 'power_factor'
+        elif unit == "kWh" or unit == "Wh":
+            advertisement['device_class'] = 'energy'
+            advertisement['state_class'] = 'total_increasing'
+        elif unit == "W" or unit == "kW":
+            advertisement['device_class'] = 'power'
+        elif unit == "A":
+            advertisement['device_class'] = 'current'
+        elif unit == "Hz":
+            True
+    #        advertisement['device_class'] = ''
+        elif unit == "h":
+            True
+    #        advertisement['device_class'] = ''
+        elif unit == "":
+            True
+    #        advertisement['device_class'] = ''
+        else:
+            print("Unknown unit mapping: "+unit)
+    elif mode == "R/W":
+        advType = "number"
+        advertisement['command_topic'] = 'nibe/'+register+'/write'
+        minR = registerDefinition[6]
+        maxR = registerDefinition[7]
+        factor = int( registerDefinition[5] )
+        useLimits = not ( (minR == maxR) and (maxR == "0") )
+        if useLimits:
+            advertisement['min'] = int(registerDefinition[6]) / factor
+            advertisement['max'] = int(registerDefinition[7]) / factor
+    else:
+        print("Unknown mode: "+mode)
+        return()
+    device = dict()
+    global hpIdentifier
+    device['identifiers'] = hpIdentifier
+    device['manufacturer'] = "NIBE"
+    advertisement['device'] = device
+    advertisement['unique_id'] = 'nibe_'+register
+#    config = '{"register":'+str(register)+',"title":"'+row[0]+'","info":"'+row[1]+'","Unit":"'+row[3]+'","Min":"'+row[6]+'","Max":"'+row[7]+'","Default":"'+row[8]+'","Mode":"'+row[9]+'","Value":'+str(value)+'}'
+    advertisement['name'] = registerDefinition[0]
+
+    mqttc.publish("homeassistant/"+advType+"/nibe_"+register+"/config", json.dumps(advertisement), retain=True)
 
 def on_connect(client, userdata, flags, rc):
     print("CONNECTED TO MQTT")
@@ -282,9 +352,21 @@ import paho.mqtt.client as mqtt
 mqttc=mqtt.Client()
 mqttc.on_message = on_message
 mqttc.on_connect = on_connect
-mqttc.connect("nas")
-mqttc.loop_start()
+mqttc.connect_async("nas")
 
+from threading import Timer
+
+def startMqtt():
+    global hpIdentifier
+    while hpIdentifier == None:
+        print("Heatpump identifier still not known; sleeping...")
+        time.sleep(5)
+    mqttc.loop_start()
+
+t = Timer(10.0, startMqtt)
+t.start()
+
+# read ALARM state on boot
 readRequest.append( getReadRequest(45001) )
 
 ser = Serial('/dev/ttyUSB0', baudrate=9600, timeout=120)
