@@ -105,6 +105,7 @@ def handleReadToken(data):
 def handleWriteConfirmation(data):
 #        print("0x6c WRITE CONFIRMED:  0x", data.hex())
         sendAck(ser)
+
 def handleRead(data):
         print("READ: 0x", data.hex())
         ## if data contains 0x5c, it is repeated ("escaped")
@@ -119,8 +120,6 @@ def handleRead(data):
         dataType = registerDefinition[4]
         length = { "u8":1, "s8":1, "u16":2, "s16":2, "u32":4, "s32":4 }
         signed = { "u8":False, "s8":True, "u16":False, "s16":True, "u32":False, "s32":True }
-        ## TODO: handle 32-bit numbers
-        if length[dataType] == 4: print("WARNING for register "+str(register)+": no support for 32bit numbers yet")
         value = data[2:2+length[dataType] ]
         value = int.from_bytes(value, "little", signed=signed[dataType] )
         minRaw = int(registerDefinition[6])
@@ -143,9 +142,11 @@ def handleRead(data):
             print("Initial boot, alarm is MODBUS ALARM. Resetting...")
             startup = False #reset startup
             writeRequest.append( getWriteRequest(45171, 1) ) #reset the alarm
-        
+
+advertisedData = False #have we advertised the values we receive from Data packet ?
 def handleData(data):
-#        print( "DATA: 0x", data.hex() )
+        global advertisedData
+        #print( "DATA: 0x", data.hex() )
         registers = dict()
         while len(data) > 0:
           msg = data[0:4]
@@ -156,22 +157,53 @@ def handleData(data):
           elif register == 0x0000:
             continue # empty spot
           elif not register in definition:
-            print("Unknown register 0x", data[0:2].hex(), "skipping...")
+            print("Unknown register 0x", msg[0:2].hex(), "skipping...")
             continue
           registerDefinition = definition[register]
+          row = registerDefinition
           dataType = registerDefinition[4]
           length = { "u8":1, "s8":1, "u16":2, "s16":2, "u32":4, "s32":4 }
           signed = { "u8":False, "s8":True, "u16":False, "s16":True, "u32":False, "s32":True }
-          ## TODO: handle 32-bit numbers
-          if length[dataType] == 4: raise "Error: no support for 32bit numbers yet"
-          value = data[2:2+length[dataType] ]
+          if length[dataType] == 4:
+              if len(data) == 0:
+                  print("ERROR: 32-bit register at end of DATA packet")
+                  continue
+              msg = msg + data[2:4] # add next register
+              data = data[4:len(data)]
+          value = msg[2:2+length[dataType] ]
           value = int.from_bytes(value, "little", signed=signed[dataType] )
+          minRaw = int(registerDefinition[6])
+          maxRaw = int(registerDefinition[7])
+          useLimits = not ( (minRaw == maxRaw) and (maxRaw == 0) )
+          if useLimits and (value < minRaw or value > maxRaw):
+            print("Received faulty value for register "+str(register)+": "+str(value)+", not relaying to MQTT!")
+            continue
           factor = int( registerDefinition[5] )
           value = value / factor
-          value = str(value) + registerDefinition[3] #unit
+          strvalue = str(value) + registerDefinition[3] #unit
+          ## TODO: maybe delay this until after sending ACK?
+          #print("0x68 DATA 0x", msg.hex(), ":", register, "(",dataType,") = ", strvalue)
+          mqttc.publish("nibe/"+str(register)+"/value", str(value))
+          config = '{"register":'+str(register)+',"title":"'+row[0]+'","info":"'+row[1]+'","Unit":"'+row[3]+'","Datatype":"'+row[4]+'","factor":"'+row[5]+'","Min":"'+row[6]+'","Max":"'+row[7]+'","Default":"'+row[8]+'","Mode":"'+row[9]+'","Value":'+str(value)+'}'
+          mqttc.publish("nibe/"+str(register)+"/config", config)
+
           registers[register] = value
 #        print("0x68 DATA:", registers )
         sendAck(ser)
+
+        ## ensure HA knows about this Data
+        global advertisedData
+        global hpIdentifier
+        if advertisedData == False and hpIdentifier != None:
+            print("Advertising to HomeAssistant...")
+            for register in registers.keys():
+                print("advertising register "+str(register))
+                res = advertiseHomeassistant(register)
+                print(res)
+                if res.rc != mqtt.MQTT_ERR_SUCCESS:
+                    print("Server not connected yet, retrying later...")
+                    return()
+            advertisedData = True
 def connection_lost(exc):
         print('Reader closed')
 
@@ -330,7 +362,8 @@ def advertiseHomeassistant(register):
 #    config = '{"register":'+str(register)+',"title":"'+row[0]+'","info":"'+row[1]+'","Unit":"'+row[3]+'","Min":"'+row[6]+'","Max":"'+row[7]+'","Default":"'+row[8]+'","Mode":"'+row[9]+'","Value":'+str(value)+'}'
     advertisement['name'] = registerDefinition[0]
 
-    mqttc.publish("homeassistant/"+advType+"/nibe_"+register+"/config", json.dumps(advertisement), retain=True)
+    res = mqttc.publish("homeassistant/"+advType+"/nibe_"+register+"/config", json.dumps(advertisement), retain=True)
+    return(res)
 
 def on_connect(client, userdata, flags, rc):
     print("CONNECTED TO MQTT")
