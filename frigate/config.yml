@@ -1,72 +1,73 @@
 mqtt:
   host: nas
-clips:
-  # Optional: Maximum length of time to retain video during long events. (default: shown below)
-  # NOTE: If an object is being tracked for longer than this amount of time, the cache
-  #       will begin to expire and the resulting clip will be the last x seconds of the event.
-  max_seconds: 1200
-  # Optional: size of tmpfs mount to create for cache files (default: not set)
-  # mount -t tmpfs -o size={tmpfs_cache_size} tmpfs /tmp/cache
-  # NOTICE: Addon users must have Protection mode disabled for the addon when using this setting.
-  # Also, if you have mounted a tmpfs volume through docker, this value should not be set in your config.
-  #  tmpfs_cache_size: 256m
-  # Optional: Retention settings for clips (default: shown below)
+ffmpeg:
+  # Optional: global ffmpeg args (default: shown below)
+  global_args: -hide_banner -loglevel warning
+  # Optional: global hwaccel args (default: shown below)
+  # NOTE: See hardware acceleration docs for your specific device
+  hwaccel_args: []
+  # Optional: global input args (default: shown below)
+  input_args: -avoid_negative_ts make_zero -fflags +genpts+discardcorrupt -rtsp_transport tcp -stimeout 5000000 -use_wallclock_as_timestamps 1
+  # Optional: global output args
+  output_args:
+    # Optional: output args for detect streams (default: shown below)
+    detect: -f rawvideo -pix_fmt yuv420p
+    # Optional: output args for record streams (default: shown below)
+    record: -f segment -segment_time 3600 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy
+    # Optional: output args for rtmp streams (default: shown below)
+    rtmp: -c copy -f flv
+  
 cameras:
   voordeur:
+    zones:
+      betonpad:
+        coordinates: 829,1307,1296,1245,1538,1157,1538,1226,1362,1310,1113,1380,893,1417,556,1448,352,1450,0,1386,0,1286,321,1320
+      padje:
+        coordinates: 907,1418,1055,1534,1442,1768,1273,1845,989,1965,670,1995,610,1778,575,1590,559,1447
+    mqtt:
+     timestamp: False
+     bounding_box: False
+     crop: True
+     height: 500
+     # Optional: Restrict mqtt messages to objects that entered any of the listed zones (default: no required zones)
+     required_zones: [padje]
     ffmpeg:
-      output_args:
-        # Optional: output args for detect streams (default: shown below)
-        detect: -f rawvideo -pix_fmt yuv420p
-        # Optional: output args for record streams (default: shown below)
-        record: -f segment -segment_time 60 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy
-        # Optional: output args for clips streams (default: shown below)
-        clips: -f segment -segment_time 10 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy
       inputs:
         - path: rtsp://admin:{FRIGATE_RTSP_PASSWORD}@e52294209.lan:554
           roles:
             - detect
             - rtmp
-            - clips
             - record
     motion:
       mask:
         - 0,686,69,519,330,516,664,605,780,953,712,1050,0,1179
         - 647,1927,647,1975,60,1976,61,1928
-        - 0,148,1536,145,1536,1009,1154,1008,932,1015,929,975,688,901,478,894,448,952,391,942,360,972,0,965
-    objects:
-      track:
-        - person
-        - car
-        - bicycle
-        - motorcycle
-        - dog
-    snapshots:
+        - 0,0,1538,0,1536,1009,1154,1008,932,1015,929,975,688,901,478,894,448,952,391,942,360,972,0,965
+snapshots:
       enabled: True
-    clips:
-      enabled: True
-      pre_capture: 30
-      post_capture: 30
-      objects:
-        - person
-        - car
-        - bicycle
-      required_zones: []
-      retain:
-        # Required: Default retention days (default: shown below)
-        default: 30
-        # Optional: Per object retention days
-        objects:
-          person: 120
-    width: 1536
-    height: 2048
-    fps: 15
-    # Optional: 24/7 recording configuration
-    record:
-      # Optional: Enable recording (default: global setting)
-      enabled: True
-      # Optional: Number of days to retain (default: global setting)
-      retain_days: 30
 
+record:
+      enabled: True
+      retain_days: 600
+      events:
+              pre_capture: 5
+              post_capture: 5
+              objects:
+                      - person
+
+detect:
+        width: 1536
+        height: 2048
+        #    width: 768
+        #    height: 1024
+        fps: 5
+
+objects:
+ track:
+  - person
+  - car
+  - bicycle
+  - dog
 
 detectors:
   cpu1:
