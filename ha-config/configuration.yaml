@@ -1,0 +1,453 @@
+
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+# Text to speech
+tts:
+  - platform: google_translate
+
+http:
+  ssl_certificate: /ssl/live/rfaelens.dynu.net/fullchain.pem
+  ssl_key: /ssl/live/rfaelens.dynu.net/privkey.pem
+
+# Example configuration.yaml entry for the Telegram Bot
+telegram_bot:
+  - platform: polling
+    api_key: !secret telegram_api_key
+    allowed_chat_ids:
+      - !secret telegram_chat_id
+
+# Example configuration.yaml entry for the notifier
+notify:
+  - platform: telegram
+    name: !secret adres
+    chat_id: !secret telegram_chat_id
+
+
+light:
+  - platform: group
+    name: Woonkamer Lights
+    entities:
+            - light.keukenaanrecht
+            - light.keukenmain
+            - light.keukeneiland
+            - light.livingmain
+            - light.livingsfeer
+  - platform: group
+    name: Badkamer Lights
+    entities:
+            - light.badkamer
+            - light.badkamermeubel
+            - light.douche
+
+spotify:
+  client_id: !secret spotify_client_id
+  client_secret: !secret spotify_client_secret
+
+homeassistant:
+  name: !secret adres
+  latitude: !secret latitude
+  longitude: !secret longitude
+  elevation: 18
+  unit_system: metric
+  time_zone: "Europe/Brussels"
+  external_url: !secret url
+  customize:
+    light.woonkamer_lights:
+      friendly_name: "Woonkamer"
+      icon: mdi:sofa
+    light.badkamer_lights:
+      friendly_name: "Badkamer"
+      icon: mdi:shower
+    switch.night:
+      friendly_name: "Nacht"
+      icon: mdi:weather-night
+    switch.hardwind:
+      friendly_name: "Harde wind"
+      icon: mdi:weather-windy
+    switch.sunshine:
+      friendly_name: "Zonneschijn"
+      icon: mdi:weather-sunny
+
+knx:
+  event_filter: ["1/6/1"]
+  scene:
+          - name: "Woonkamer uit"
+            address: 1/6/1
+            scene_number: 1
+          - name: "TV/Keuken#2"
+            address: 1/6/1
+            scene_number: 2
+          - name: "Keuken#1"
+            address: 1/6/1
+            scene_number: 3
+          - name: "Keuken#3"
+            address: 1/6/1
+            scene_number: 4
+            
+  # configure platforms directly in configuration.yaml
+  #  number:
+  #  - name: "BureauValve"
+  #    address: "7/6/1"
+  #    state_address: "7/6/7"
+  #    type: percent
+  cover:
+    - name: "Living"
+      device_class: "shade"
+      move_long_address: '4/1/1' # Up/Down function
+      position_address: '4/3/1' # Position function
+      position_state_address: '4/4/1' # Read Position function
+    - name: "Badkamer"
+      device_class: "shade"
+      move_long_address: '4/1/2' # Up/Down function
+      position_address: '4/3/2' # Position function
+      position_state_address: '4/4/2' # Read Position function
+    - name: "Slk1Z"
+      device_class: "shade"
+      move_long_address: '4/1/3' # Up/Down function
+      position_address: '4/3/3' # Position function
+      position_state_address: '4/4/3' # Read Position function
+    - name: "Gang2"
+      device_class: "shade"
+      move_long_address: '4/1/4' # Up/Down function
+      position_address: '4/3/4' # Position function
+      position_state_address: '4/4/4' # Read Position function
+    - name: "Slk2Z"
+      device_class: "shade"
+      move_long_address: '4/1/5' # Up/Down function
+      position_address: '4/3/5' # Position function
+      position_state_address: '4/4/5' # Read Position function
+      #      travelling_time_down: 24
+      #travelling_time_up: 24
+  binary_sensor:
+    - name: "ToiletGV Presence"
+      device_class: "motion"
+      state_address: "3/1/1"
+    - name: "Toilet1 Presence"
+      device_class: "motion"
+      state_address: "3/1/2"
+    - name: "Inkom Presence"
+      device_class: "motion"
+      state_address: "3/1/4"
+    - name: "Gang1 Presence"
+      device_class: "motion"
+      state_address: "3/1/6"
+    - name: "Gang2 Presence"
+      device_class: "motion"
+      state_address: "3/1/7"
+    - name: "Voordeur"
+      device_class: "door"
+      state_address: "5/3/1"
+    - name: "LivingZ"
+      device_class: "door"
+      state_address: "5/3/3"
+    - name: "LivingN"
+      device_class: "window"
+      state_address: "5/3/2"
+    - name: "Berging"
+      device_class: "door"
+      state_address: "5/3/4"
+    - name: "Bureau"
+      device_class: "window"
+      state_address: "5/3/5"
+    - name: "Slk1N"
+      device_class: "window"
+      state_address: "5/3/6"
+    - name: "Slk1Z"
+      device_class: "window"
+      state_address: "5/3/7"
+    - name: "Badkamer"
+      device_class: "window"
+      state_address: "5/3/8"
+    - name: "Slk2N"
+      device_class: "window"
+      state_address: "5/3/9"
+    - name: "Slk2Z"
+      device_class: "window"
+      state_address: "5/3/10"
+    - name: "Gang2"
+      device_class: "window"
+      state_address: "5/3/11"
+    - name: "Slk1NValve"
+      state_address: "7/6/13"
+      device_class: "power"
+    - name: "Slk1ZValve"
+      state_address: "7/6/14"
+      device_class: "power"
+    - name: "BureauValve"
+      state_address: "7/6/15"
+      device_class: "power"
+    - name: "BadkamerValve"
+      state_address: "7/6/16"
+      device_class: "power"
+    - name: "Slk2NValve"
+      state_address: "7/6/17"
+      device_class: "power"
+    - name: "Slk2ZValve"
+      state_address: "7/6/18"
+      device_class: "power"
+  sensor:
+    - name: "Lights_Scenes_Living"
+      state_address: 1/6/1
+      type: "scene_number"
+    - name: "Slk1NValve"
+      state_address: "7/6/7"
+      type: "percent"
+    - name: "Slk1ZValve"
+      state_address: "7/6/8"
+      type: "percent"
+    - name: "BureauValve"
+      state_address: "7/6/9"
+      type: "percent"
+    - name: "BadkamerValve"
+      state_address: "7/6/10"
+      type: "percent"
+    - name: "Slk2NValve"
+      state_address: "7/6/11"
+      type: "percent"
+    - name: "Slk2ZValve"
+      state_address: "7/6/12"
+      type: "percent"
+    - name: "ToiletGV"
+      state_address: "6/4/1"
+      type: "illuminance"
+    - name: "Toilet1"
+      state_address: "6/4/2"
+      type: "illuminance"
+    - name: "Inkom"
+      state_address: "6/4/3"
+      type: "illuminance"
+    - name: "Gang1"
+      state_address: "6/4/4"
+      type: "illuminance"
+    - name: "Gang2"
+      state_address: "6/4/5"
+      type: "illuminance"
+    - name: "KeukenCO2"
+      state_address: "6/3/1"
+      type: "ppm"
+    - name: "BadkamerCO2"
+      state_address: "6/3/2"
+      type: "ppm"
+    - name: "KeukenCO2"
+      state_address: "6/2/1"
+      type: "humidity"
+    - name: "BadkamerCO2"
+      state_address: "6/2/2"
+      type: "humidity"
+    - name: "KeukenCO2 Dew Point"
+      state_address: "6/2/3"
+      type: "temperature"
+    - name: "BadkamerCO2 Dew Point"
+      state_address: "6/2/4"
+      type: "temperature"
+    - name: "LivingZ"
+      state_address: "6/1/1"
+      type: "temperature"
+    - name: "Aanrecht"
+      state_address: "6/1/2"
+      type: "temperature"
+    - name: "Keuken"
+      state_address: "6/1/3"
+      type: "temperature"
+    - name: "KeukenCO2"
+      state_address: "6/1/4"
+      type: "temperature"
+    - name: "LivingN"
+      state_address: "6/1/5"
+      type: "temperature"
+    - name: "Inkom"
+      state_address: "6/1/6"
+      type: "temperature"
+    - name: "Gang1"
+      state_address: "6/1/7"
+      type: "temperature"
+    - name: "Bureau"
+      state_address: "6/1/8"
+      type: "temperature"
+    - name: "Slk1N"
+      state_address: "6/1/9"
+      type: "temperature"
+    - name: "Slk1Z"
+      state_address: "6/1/10"
+      type: "temperature"
+    - name: "Badkamer"
+      state_address: "6/1/11"
+      type: "temperature"
+    - name: "BadkamerCO2"
+      state_address: "6/1/12"
+      type: "temperature"
+    - name: "Gang2"
+      state_address: "6/1/13"
+      type: "temperature"
+    - name: "Zolder"
+      state_address: "6/1/14"
+      type: "temperature"
+    - name: "TR"
+      state_address: "6/1/15"
+      type: "temperature"
+    - name: "Slk2N"
+      state_address: "6/1/16"
+      type: "temperature"
+    - name: "Slk2Z"
+      state_address: "6/1/17"
+      type: "temperature"
+    - name: "Toilet1"
+      state_address: "6/1/19"
+      type: "temperature"
+  expose:
+    - type: time
+      address: "2/3/0"
+  switch:
+    - name: "Sunshine"
+      address: "2/2/1"
+    - name: "HardWind"
+      address: "2/2/2"
+    - name: "Night"
+      address: "2/2/3"
+  light:
+    - name: "Inkom"
+      address: "1/1/1"
+      state_address: "1/2/1"
+    - name: "Gang1"
+      address: "1/1/2"
+      state_address: "1/2/2"
+    - name: "Gang2"
+      address: "1/1/3"
+      state_address: "1/2/3"
+    - name: "Berging"
+      address: "1/1/4"
+      state_address: "1/2/4"
+    - name: "TrapOrientatie"
+      address: "1/1/5"
+      state_address: "1/2/5"
+    - name: "TR"
+      address: "1/1/6"
+      state_address: "1/2/6"
+    - name: "Slk1N"
+      address: "1/1/7"
+      state_address: "1/2/7"
+    - name: "Slk1Z"
+      address: "1/1/8"
+      state_address: "1/2/8"
+    - name: "Slk2N"
+      address: "1/1/9"
+      state_address: "1/2/9"
+    - name: "Slk2Z"
+      address: "1/1/10"
+      state_address: "1/2/10"
+    - name: "Zolder"
+      address: "1/1/11"
+      state_address: "1/2/11"
+    - name: "Toilet1"
+      address: "1/1/12"
+      state_address: "1/2/12"
+    - name: "ToiletGV"
+      address: "1/1/13"
+      state_address: "1/2/13"
+    - name: "Badkamermeubel"
+      address: "1/1/14"
+      state_address: "1/2/14"
+      brightness_address: "1/3/14"
+      brightness_state_address: "1/5/14"
+    - name: "Badkamer"
+      address: "1/1/15"
+      state_address: "1/2/15"
+      brightness_address: "1/3/14"
+      brightness_state_address: "1/5/14"
+    - name: "Douche"
+      address: "1/1/16"
+      state_address: "1/2/16"
+      brightness_address: "1/3/16"
+      brightness_state_address: "1/5/16"
+    - name: "BuitenN"
+      address: "1/1/17"
+      state_address: "1/2/17"
+    - name: "BuitenZ"
+      address: "1/1/18"
+      state_address: "1/2/18"
+    - name: "Bureau"
+      address: "1/1/19"
+      state_address: "1/2/19"
+      brightness_address: "1/3/19"
+      brightness_state_address: "1/5/19"
+    - name: "LivingMain"
+      address: "1/1/20"
+      state_address: "1/2/20"
+      brightness_address: "1/3/20"
+      brightness_state_address: "1/5/20"
+    - name: "LivingSfeer"
+      address: "1/1/21"
+      state_address: "1/2/21"
+      brightness_address: "1/3/21"
+      brightness_state_address: "1/5/21"
+    - name: "KeukenMain"
+      address: "1/1/22"
+      state_address: "1/2/22"
+      brightness_address: "1/3/22"
+      brightness_state_address: "1/5/22"
+    - name: "KeukenEiland"
+      address: "1/1/23"
+      state_address: "1/2/23"
+      brightness_address: "1/3/23"
+      brightness_state_address: "1/5/23"
+    - name: "KeukenAanrecht"
+      address: "1/1/24"
+      state_address: "1/2/24"
+  climate:
+    - name: "Slk1N"
+      temperature_address: "6/1/9"
+      target_temperature_address: "7/2/1"
+      target_temperature_state_address: "7/2/7"
+      heat_cool_address: "7/2/13"
+      heat_cool_state_address: "7/2/19"
+      min_temp: 7.0
+      max_temp: 32.0
+    - name: "Slk1Z"
+      temperature_address: "6/1/10"
+      target_temperature_address: "7/2/2"
+      target_temperature_state_address: "7/2/8"
+      heat_cool_address: "7/2/14"
+      heat_cool_state_address: "7/2/20"
+      min_temp: 7.0
+      max_temp: 32.0
+    - name: "Bureau"
+      temperature_address: "6/1/8"
+      target_temperature_address: "7/2/3"
+      target_temperature_state_address: "7/2/9"
+      heat_cool_address: "7/2/15"
+      heat_cool_state_address: "7/2/21"
+      min_temp: 7.0
+      max_temp: 32.0
+    - name: "Badkamer"
+      temperature_address: "6/1/12"
+      target_temperature_address: "7/2/4"
+      target_temperature_state_address: "7/2/10"
+      heat_cool_address: "7/2/16"
+      heat_cool_state_address: "7/2/22"
+      min_temp: 7.0
+      max_temp: 32.0
+    - name: "Slk2N"
+      temperature_address: "6/1/16"
+      target_temperature_address: "7/2/5"
+      target_temperature_state_address: "7/2/11"
+      heat_cool_address: "7/2/17"
+      heat_cool_state_address: "7/2/23"
+      min_temp: 7.0
+      max_temp: 32.0
+    - name: "Slk2Z"
+      temperature_address: "6/1/17"
+      target_temperature_address: "7/2/6"
+      target_temperature_state_address: "7/2/12"
+      heat_cool_address: "7/2/18"
+      heat_cool_state_address: "7/2/24"
+      min_temp: 7.0
+      max_temp: 32.0
+    # etc...
+  # or outsource platform configuration to separate files
+  #`  sensor: !include knx_sensor.yaml
+
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml

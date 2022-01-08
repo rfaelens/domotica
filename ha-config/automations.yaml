@@ -1,0 +1,232 @@
+- id: '1627598608930'
+  alias: 'Sync sunshine to KNX: ON'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: weather.twijglaan11metno
+  condition:
+  - condition: state
+    entity_id: weather.twijglaan11metno
+    state: sunny
+  - condition: sun
+    before: sunset
+    after: sunrise
+  action:
+  - service: switch.turn_on
+    target:
+      entity_id: switch.sunshine
+  mode: single
+- id: '1627598867533'
+  alias: Sync windspeed warning to KNX
+  description: ''
+  trigger:
+  - platform: numeric_state
+    entity_id: weather.twijglaan11metno
+    attribute: wind_speed
+    above: '100'
+  condition: []
+  action:
+  - service: switch.turn_on
+    target:
+      entity_id: switch.hardwind
+  mode: single
+- id: '1627598963010'
+  alias: Front door light on
+  description: ''
+  trigger:
+  - type: motion
+    platform: device
+    device_id: 6287d13ec2de04516c08aab1aa8cebf2
+    entity_id: binary_sensor.mymotiondetectorrule_cell_motion_detection
+    domain: binary_sensor
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+      milliseconds: 0
+  condition:
+  - condition: state
+    entity_id: switch.night
+    state: 'ON'
+  action:
+  - service: light.turn_on
+    target:
+      entity_id: light.buitenn
+  mode: single
+- id: '1627599011884'
+  alias: Front door light
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: sensor.voordeur_person
+  - platform: state
+    entity_id: binary_sensor.mymotiondetectorrule_cell_motion_detection
+  condition:
+  - condition: sun
+    before: sunrise
+    after: sunset
+  action:
+  - service: light.turn_on
+    target:
+      entity_id: light.buitenn
+  - wait_for_trigger:
+    - platform: state
+      entity_id: sensor.voordeur_person
+      to: '0'
+  - wait_template: ''
+    timeout: '120'
+  - service: light.turn_off
+    target:
+      entity_id: light.buitenn
+  mode: restart
+- id: '1627631614445'
+  alias: 'Sync sunshine to KNX: OFF'
+  description: ''
+  trigger:
+  - platform: state
+    entity_id: weather.twijglaan11metno
+  - platform: sun
+    event: sunset
+  condition:
+  - condition: or
+    conditions:
+    - condition: not
+      conditions:
+      - condition: state
+        entity_id: weather.twijglaan11metno
+        state: sunny
+    - condition: sun
+      before: sunrise
+      after: sunset
+  action:
+  - service: switch.turn_off
+    target:
+      entity_id: switch.sunshine
+  mode: single
+- id: '1628158637681'
+  alias: Deur automatisch open voor Astrid
+  description: ''
+  trigger:
+  - platform: device
+    device_id: 6db512f54736bd84b96d689f96943c46
+    domain: device_tracker
+    entity_id: device_tracker.pixel_3a
+    type: enters
+    zone: zone.home
+  condition:
+  - condition: device
+    device_id: 6db512f54736bd84b96d689f96943c46
+    domain: device_tracker
+    entity_id: device_tracker.pixel_3a
+    type: is_home
+  - type: is_motion
+    condition: device
+    device_id: 6287d13ec2de04516c08aab1aa8cebf2
+    entity_id: binary_sensor.mymotiondetectorrule_cell_motion_detection
+    domain: binary_sensor
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+      milliseconds: 0
+  action:
+  - service: lock.unlock
+    target:
+      device_id: a63ab87e9ebd4c895eb10000184f3279
+  mode: single
+- id: '1628190123267'
+  alias: Deurbel
+  description: ''
+  trigger:
+  - platform: event
+    event_type: button_short_press
+    event_data:
+      payload: RING
+  condition: []
+  action:
+  - service: notify.domotica_twijglaan_11
+    data:
+      message: Iemand aan de deur!
+      title: DRRRIIINNNGG
+  mode: single
+- id: '1628190743859'
+  alias: Door bell ring
+  description: ''
+  trigger:
+  - platform: device
+    domain: mqtt
+    device_id: 6287d13ec2de04516c08aab1aa8cebf2
+    type: button_short_press
+    subtype: button_1
+    discovery_id: 0x90fd9ffffedf1266 action_arrow_left_click
+  condition: []
+  action:
+  - service: notify.domotica_twijglaan_11
+    data:
+      message: RING
+  mode: single
+- id: '1628291370138'
+  alias: Nacht OFF
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunrise
+  condition: []
+  action:
+  - service: switch.turn_off
+    target:
+      entity_id: switch.night
+  mode: single
+- id: '1628291402787'
+  alias: Nacht ON
+  description: ''
+  trigger:
+  - platform: sun
+    event: sunset
+  condition: []
+  action:
+  - service: switch.turn_on
+    target:
+      entity_id: switch.night
+  mode: single
+- id: '1630098068955'
+  alias: SCENE WoonkamerUit
+  description: ''
+  trigger:
+  - platform: event
+    event_type: knx_event
+    event_data:
+      destination: 1/6/1
+    id: '1'
+  condition:
+  - condition: state
+    entity_id: sensor.lights_scenes_living
+    state: '1'
+  action:
+  - service: switch.turn_off
+    target:
+      entity_id:
+      - switch.living_kaku_12
+      - switch.living_kaku_11
+      - switch.living_kaku_10
+  mode: single
+- id: '1630099336869'
+  alias: SCENE WoonkamerTv
+  description: ''
+  trigger:
+  - platform: event
+    event_type: knx_event
+    event_data:
+      destination: 1/6/1
+    id: '1'
+  condition:
+  - condition: state
+    entity_id: sensor.lights_scenes_living
+    state: '2'
+  action:
+  - service: switch.turn_on
+    target:
+      entity_id:
+      - switch.living_kaku_10
+      - switch.living_kaku_12
+  mode: single

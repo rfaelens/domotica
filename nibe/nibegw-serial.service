@@ -1,0 +1,22 @@
+[Unit]
+Description=NIBE to MQTT bridge
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/domotica/nibe/nibegw-serial.py
+
+# Disable Python's buffering of STDOUT and STDERR, so that output from the
+# service shows up immediately in systemd's logs
+Environment=PYTHONUNBUFFERED=1
+Environment=PORT=5353
+
+# Automatically restart the service if it crashes
+Restart=on-failure
+
+# Use a dedicated user to run our service
+#User=nobody
+
+
+[Install]
+WantedBy=multi-user.target
+
+
