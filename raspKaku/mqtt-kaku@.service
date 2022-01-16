@@ -1,0 +1,21 @@
+[Unit]
+Description=MQTT Kaku switch for code %i
+
+[Service]
+ExecStart=/usr/bin/python3 /opt/domotica/raspKaku/mqtt-kaku-switch.py %i
+
+# Disable Python's buffering of STDOUT and STDERR, so that output from the
+# service shows up immediately in systemd's logs
+Environment=PYTHONUNBUFFERED=1
+
+# Automatically restart the service if it crashes
+Restart=on-failure
+
+# Use a dedicated user to run our service
+User=root
+
+
+[Install]
+WantedBy=multi-user.target
+
+
