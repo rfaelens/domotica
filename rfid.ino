@@ -94,6 +94,7 @@ void setup() {
   }
   Serial.println("Connected to WIFI");
 
+  ArduinoOTA.setHostname("RFID");
   ArduinoOTA
   .onStart([]() {
     digitalWrite(PIN_RELAY, false);
@@ -153,6 +154,7 @@ void loop() {
   client.loop();
   
   if ((millis() - last) > 10*1000) {
+    last = millis();
     client.publish("rfid/status", "online");
   }
 
