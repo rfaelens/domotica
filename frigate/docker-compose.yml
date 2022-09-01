@@ -4,7 +4,7 @@ services:
     container_name: frigate
     privileged: true # this may not be necessary for all setups
     restart: unless-stopped
-    image: blakeblackshear/frigate:stable-amd64nvidia
+    image: blakeblackshear/frigate:stable-amd64
     devices:
       - /dev/bus/usb:/dev/bus/usb
       - /dev/dri/renderD128 # for intel hwaccel, needs to be updated for your hardware

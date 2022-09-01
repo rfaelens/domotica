@@ -13,7 +13,7 @@ ffmpeg:
     # Optional: output args for detect streams (default: shown below)
     detect: -f rawvideo -pix_fmt yuv420p
     # Optional: output args for record streams (default: shown below)
-    record: -f segment -segment_time 3600 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy
+    record: -f segment -segment_time 60 -segment_format mp4 -reset_timestamps 1 -strftime 1 -c copy
     # Optional: output args for rtmp streams (default: shown below)
     rtmp: -c copy -f flv
   
@@ -25,7 +25,7 @@ cameras:
       padje:
         coordinates: 907,1418,1055,1534,1442,1768,1273,1845,989,1965,670,1995,610,1778,575,1590,559,1447
     mqtt:
-     timestamp: False
+     timestamp: True
      bounding_box: False
      crop: True
      height: 500
