@@ -20,8 +20,8 @@
 
 #define SUBSCRIBE_TOPIC "kaku/#"
 
-const char* ssid = "Twijglaan11";
-const char* password = "jaggedwater450";
+const char* ssid = "XXXX";
+const char* password = "YYYY";
 const char* mqtt_server = "192.168.10.2";
 
 WiFiClient espClient;
