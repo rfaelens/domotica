@@ -47,8 +47,8 @@
 
 #define SUBSCRIBE_TOPIC "rfid/+"
 
-const char* ssid = "Twijglaan11";
-const char* password = "jaggedwater450";
+const char* ssid = "XXXXXX";
+const char* password = "YYYYYY";
 const char* mqtt_server = "192.168.10.2";
 
 WiFiClient espClient;
